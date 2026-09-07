@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EvidenceCap — Interactive Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#eef3fb;
+    --panel:#ffffff;
+    --ink:#10233f;
+    --muted:#5b6b84;
+    --line:#d7e2f2;
+    --blue:#155eef;
+    --blue-dark:#0d3fb0;
+    --blue-tint:#e7eefd;
+    --red:#e5342b;
+    --red-dark:#b91f1f;
+    --amber:#c9820a;
+    --amber-bg:#fff4da;
+    --green:#1a936f;
+    --radius:18px;
+    --radius-sm:11px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:#dbe6f6;
+    font-family:'Inter',system-ui,sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:28px 16px 60px;
+    min-height:100vh;
+  }
+  .workspace{
+    display:flex;
+    gap:28px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    max-width:1120px;
+    width:100%;
+    justify-content:center;
+  }
+
+  /* ---------- Screen jump rail ---------- */
+  .rail{
+    width:220px;
+    background:var(--panel);
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    padding:16px;
+    position:sticky;
+    top:28px;
+  }
+  .rail h2{
+    font-family:'Baloo 2',sans-serif;
+    font-size:15px;
+    margin:2px 4px 12px;
+    color:var(--ink);
+  }
+  .rail button{
+    display:block;
+    width:100%;
+    text-align:left;
+    background:none;
+    border:none;
+    padding:9px 10px;
+    border-radius:9px;
+    font-size:13.5px;
+    color:var(--muted);
+    cursor:pointer;
+    font-family:'Inter',sans-serif;
+    margin-bottom:2px;
+  }
+  .rail button.active{
+    background:var(--blue-tint);
+    color:var(--blue-dark);
+    font-weight:600;
+  }
+  .rail button:hover:not(.active){background:#f3f6fc;}
+  .rail .divider{height:1px;background:var(--line);margin:10px 0;}
+  .rail .hint{
+    font-size:12px;
+    color:var(--muted);
+    padding:8px 10px 2px;
+    line-height:1.5;
+  }
+
+  /* ---------- Phone frame ---------- */
+  .phone{
+    width:380px;
+    background:#000;
+    border-radius:44px;
+    padding:14px;
+    box-shadow:0 30px 60px rgba(16,35,63,.28);
+  }
+  .phone-inner{
+    background:var(--bg);
+    border-radius:32px;
+    overflow:hidden;
+    height:760px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+  }
+  .statusbar{
+    background:#000;
+    color:#fff;
+    font-size:13px;
+    padding:10px 22px 6px;
+    display:flex;
+    justify-content:space-between;
+    font-family:'Inter',sans-serif;
+    flex-shrink:0;
+  }
+  .appbar{
+    background:var(--panel);
+    padding:16px 20px 14px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    border-bottom:1px solid var(--line);
+    flex-shrink:0;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-family:'Baloo 2',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--ink);
+  }
+  .brand .icon{color:var(--red);}
+  .appbar .step{font-size:13px;color:var(--muted);font-weight:600;}
+  .back-btn{
+    background:none;border:none;color:var(--muted);
+    font-size:20px;cursor:pointer;padding:0 6px 0 0;
+    line-height:1;
+  }
+  .screen{
+    display:none;
+    flex:1;
+    overflow-y:auto;
+    padding:22px 20px 24px;
+  }
+  .screen.active{display:block;}
+  h1.title{
+    font-family:'Baloo 2',sans-serif;
+    font-size:24px;
+    margin:2px 0 6px;
+    line-height:1.2;
+  }
+  p.subtitle{
+    color:var(--muted);
+    margin:0 0 20px;
+    font-size:14px;
+  }
+
+  /* ---------- shared bits ---------- */
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px;
+  }
+  .row{display:flex;align-items:center;justify-content:space-between;}
+  .row + .row{border-top:1px solid var(--line);margin-top:12px;padding-top:12px;}
+  .label{font-size:14.5px;font-weight:600;}
+  .field-label{font-size:13.5px;font-weight:700;margin:16px 0 6px;display:block;}
+  .field-label:first-child{margin-top:0;}
+  input[type=text], textarea, select{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:11px 13px;
+    font-family:'Inter',sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    background:#fff;
+  }
+  textarea{resize:vertical;min-height:56px;}
+  ::placeholder{color:#9aa8bd;}
+
+  .toggle{
+    width:46px;height:26px;border-radius:14px;background:#c9d6ea;
+    position:relative;cursor:pointer;border:none;flex-shrink:0;
+  }
+  .toggle.on{background:var(--blue);}
+  .toggle .knob{
+    position:absolute;top:3px;left:3px;width:20px;height:20px;
+    background:#fff;border-radius:50%;transition:left .15s ease;
+    box-shadow:0 1px 2px rgba(0,0,0,.25);
+  }
+  .toggle.on .knob{left:23px;}
+  .toggle-label{font-size:13px;font-weight:700;color:var(--blue);}
+  .toggle-label.off{color:var(--muted);}
+
+  .btn{
+    width:100%;
+    padding:14px 16px;
+    border-radius:14px;
+    border:none;
+    font-family:'Inter',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:disabled{background:#a9bee8;cursor:not-allowed;}
+  .btn-secondary{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .btn-danger{background:#fff;border:1px solid var(--line);color:var(--red-dark);}
+  .btn-row{display:flex;gap:10px;}
+  .btn-row .btn{flex:1;}
+
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--blue-tint);color:var(--blue-dark);
+    font-size:12.5px;font-weight:700;padding:6px 12px;border-radius:20px;
+  }
+  .pill.grey{background:#eef1f6;color:var(--muted);}
+  .chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .chip{
+    padding:8px 14px;border-radius:20px;border:1px solid var(--line);
+    background:#fff;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;
+  }
+  .chip.active{border-color:var(--red);color:var(--red-dark);background:#fdecec;}
+  .chip.active.pri{border-color:var(--blue);color:var(--blue-dark);background:var(--blue-tint);}
+
+  .toast{
+    position:absolute;left:20px;right:20px;bottom:20px;
+    background:#10233f;color:#fff;padding:12px 16px;border-radius:12px;
+    font-size:13.5px;text-align:center;font-weight:600;
+    opacity:0;transform:translateY(10px);transition:all .2s ease;
+    pointer-events:none;z-index:40;
+  }
+  .toast.show{opacity:1;transform:translateY(0);}
+
+  /* ---------- Home ---------- */
+  .draft-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:13px 4px;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .draft-item:last-child{border-bottom:none;}
+  .draft-item .name{font-weight:700;font-size:14px;}
+  .draft-item .meta{font-size:12px;color:var(--muted);margin-top:2px;}
+  .recover-banner{
+    background:var(--amber-bg);border:1px solid #f0d99a;border-radius:14px;
+    padding:14px;margin-bottom:16px;
+  }
+  .recover-banner .txt{font-size:13.5px;font-weight:600;margin-bottom:10px;color:#7a520b;}
+
+  /* ---------- Setup ---------- */
+  .privacy-note{
+    font-size:12.5px;color:var(--muted);background:#f3f6fc;border-radius:10px;
+    padding:10px 12px;line-height:1.5;margin:16px 0 22px;
+  }
+  .record-circle{
+    width:120px;height:120px;border-radius:50%;
+    background:#fff;border:6px solid #dbe6f6;
+    display:flex;align-items:center;justify-content:center;
+    margin:26px auto 14px;cursor:pointer;
+  }
+  .record-circle .dot{width:64px;height:64px;background:var(--red);border-radius:50%;}
+  .record-square{
+    width:120px;height:120px;border-radius:26px;background:var(--red);
+    display:flex;align-items:center;justify-content:center;margin:0 auto;cursor:pointer;
+  }
+  .record-square .sq{width:36px;height:36px;background:#fff;border-radius:8px;}
+  .center-label{text-align:center;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:18px;margin-top:14px;}
+  .center-sub{text-align:center;color:var(--muted);font-size:13px;margin-top:2px;}
+
+  /* ---------- Countdown ---------- */
+  .countdown-num{
+    font-family:'Baloo 2',sans-serif;font-size:96px;font-weight:800;
+    text-align:center;color:var(--blue);margin:50px 0 10px;
+  }
+  .countdown-txt{text-align:center;color:var(--muted);font-size:14px;padding:0 10px;}
+
+  /* ---------- Recording ---------- */
+  .rec-badge{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    background:var(--blue-tint);color:var(--red-dark);font-weight:700;font-size:14px;
+    padding:9px 0;border-radius:20px;margin:14px auto 12px;width:180px;
+  }
+  .rec-badge .rdot{width:9px;height:9px;background:var(--red);border-radius:50%;}
+  .tag-row{display:flex;gap:8px;justify-content:center;margin-bottom:8px;flex-wrap:wrap;}
+  .tag{background:var(--blue-tint);color:var(--blue-dark);font-size:12px;font-weight:700;padding:6px 12px;border-radius:16px;}
+  .storage-tag{background:#eef1f6;color:var(--muted);}
+  .warn-banner{
+    background:var(--amber-bg);border:1px solid #f0d99a;color:#7a520b;
+    font-size:12.5px;font-weight:600;padding:10px 12px;border-radius:12px;margin-bottom:14px;
+    display:none;
+  }
+  .warn-banner.show{display:block;}
+  .demo-toggle{
+    font-size:11.5px;color:var(--muted);text-decoration:underline;
+    background:none;border:none;cursor:pointer;display:block;margin:0 auto 14px;
+  }
+  .marker-count{text-align:center;font-size:12.5px;color:var(--muted);margin-top:10px;}
+
+  /* ---------- Review ---------- */
+  .player{
+    background:#c7d7f0;border-radius:16px;height:170px;
+    display:flex;align-items:center;justify-content:center;margin-bottom:10px;
+    border:1px solid var(--line);
+  }
+  .play-btn{
+    width:52px;height:52px;border-radius:50%;background:#fff;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    box-shadow:0 3px 8px rgba(16,35,63,.15);
+  }
+  .scrub{position:relative;height:26px;margin-bottom:6px;}
+  .scrub .track{position:absolute;top:11px;left:0;right:0;height:4px;background:#dbe6f6;border-radius:3px;}
+  .scrub .marker-dot{
+    position:absolute;top:6px;width:14px;height:14px;background:var(--red);
+    border-radius:50%;border:2px solid #fff;cursor:pointer;
+  }
+  .time-row{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .marker-list-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 4px;border-bottom:1px solid var(--line);font-size:13.5px;
+  }
+  .marker-list-item:last-child{border-bottom:none;}
+  .jump-btn{
+    background:none;border:none;color:var(--blue);font-weight:700;font-size:13px;cursor:pointer;
+  }
+  .trim-block{margin:14px 0;}
+  .trim-block input[type=range]{width:100%;accent-color:var(--blue);}
+
+  /* ---------- Report ---------- */
+  .step-item{
+    display:flex;align-items:center;gap:8px;margin-bottom:8px;
+  }
+  .step-num{
+    width:22px;height:22px;border-radius:50%;background:var(--blue-tint);color:var(--blue-dark);
+    font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .step-item input{flex:1;}
+  .step-remove{
+    background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px;flex-shrink:0;
+  }
+  .add-step-row{display:flex;gap:8px;margin-top:6px;}
+  .add-step-row input{flex:1;}
+  .add-step-row button{
+    background:var(--blue-tint);color:var(--blue-dark);border:none;border-radius:10px;
+    padding:0 14px;font-weight:700;font-size:13px;cursor:pointer;
+  }
+
+  /* ---------- Export ---------- */
+  .summary-card .row:first-child{border-top:none;padding-top:0;margin-top:0;}
+  .checkmark{
+    width:56px;height:56px;border-radius:50%;background:var(--blue-tint);
+    display:flex;align-items:center;justify-content:center;margin:8px auto 18px;
+  }
+  .export-btn{margin-bottom:10px;}
+
+  /* ---------- Settings ---------- */
+  .retention-opt{
+    display:flex;align-items:center;gap:10px;padding:11px 4px;border-bottom:1px solid var(--line);cursor:pointer;
+  }
+  .retention-opt:last-child{border-bottom:none;}
+  .radio{
+    width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .radio.sel{border-color:var(--blue);}
+  .radio.sel::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--blue);}
+
+  .footer-note{font-size:11.5px;color:#9aa8bd;text-align:center;margin-top:18px;}
+</style>
+</head>
+<body>
+
+<div class="workspace">
+
+  <!-- ================= SCREEN JUMP RAIL ================= -->
+  <div class="rail">
+    <h2>EvidenceCap prototype</h2>
+    <button data-screen="home" class="nav-btn active">1 · Home</button>
+    <button data-screen="setup" class="nav-btn">2 · Capture setup</button>
+    <button data-screen="countdown" class="nav-btn">3 · Countdown</button>
+    <button data-screen="recording" class="nav-btn">4 · Recording</button>
+    <button data-screen="paused" class="nav-btn">5 · Paused</button>
+    <button data-screen="review" class="nav-btn">6 · Review</button>
+    <button data-screen="report" class="nav-btn">7 · Bug report</button>
+    <button data-screen="export" class="nav-btn">8 · Export</button>
+    <button data-screen="settings" class="nav-btn">9 · Settings</button>
+    <div class="divider"></div>
+    <p class="hint">This rail is for testing only — inside the phone, screens flow the way they will in the real app (buttons, not jumps).</p>
+  </div>
+
+  <!-- ================= PHONE ================= -->
+  <div class="phone">
+    <div class="phone-inner">
+
+      <div class="statusbar">
+        <span>10:36</span>
+        <span>📶 🔋41</span>
+      </div>
+
+      <div class="appbar">
+        <div class="brand" id="appbar-left"><span class="icon">▮</span> EvidenceCap</div>
+        <div class="step" id="appbar-step">Home</div>
+      </div>
+
+      <!-- ===== 1. HOME ===== -->
+      <div class="screen active" id="screen-home">
+        <div class="recover-banner" id="recover-banner" style="display:none;">
+          <div class="txt">We found an interrupted recording. Recover it?</div>
+          <div class="btn-row">
+            <button class="btn btn-secondary" style="padding:10px;font-size:13px;" onclick="dismissRecovery(false)">Discard</button>
+            <button class="btn btn-primary" style="padding:10px;font-size:13px;" onclick="dismissRecovery(true)">Recover</button>
+          </div>
+        </div>
+
+        <h1 class="title">Your captures</h1>
+        <p class="subtitle">Local storage · Encrypted by default</p>
+
+        <div class="card">
+          <div class="draft-item" onclick="openDraftReport()">
+            <div>
+              <div class="name">Login button becomes unresponsive</div>
+              <div class="meta">Draft · Steps to reproduce incomplete</div>
+            </div>
+            <span class="pill grey">Draft</span>
+          </div>
+          <div class="draft-item" onclick="openCompletedExport()">
+            <div>
+              <div class="name">Checkout total miscalculates tax</div>
+              <div class="meta">Completed · 00:47 recording</div>
+            </div>
+            <span class="pill">Ready</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-top:20px;" onclick="startNewCapture()">＋ New Capture</button>
+        <p class="footer-note">Tap ⚙ in the corner any time to open Settings</p>
+        <div style="text-align:center;margin-top:8px;">
+          <button class="demo-toggle" onclick="showScreen('settings')">Open Settings ⚙</button>
+        </div>
+      </div>
+
+      <!-- ===== 2. CAPTURE SETUP ===== -->
+      <div class="screen" id="screen-setup">
+        <h1 class="title">Ready to Capture</h1>
+        <p class="subtitle">Configure once, then start instantly</p>
+
+        <div class="card">
+          <label class="field-label">Project / app being tested</label>
+          <input type="text" id="project-name" placeholder="e.g. Checkout Flow — Android">
+
+          <div class="row" style="margin-top:16px;">
+            <span class="label">Microphone</span>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="toggle-label" id="mic-label">ON</span>
+              <button class="toggle on" id="mic-toggle" onclick="toggleMic()"><span class="knob"></span></button>
+            </div>
+          </div>
+          <div class="row">
+            <span class="label">Screen source</span>
+            <span style="font-size:13.5px;color:var(--muted);font-weight:600;">Main display</span>
+          </div>
+          <div class="row">
+            <span class="label">Quality</span>
+            <select style="width:auto;padding:6px 10px;font-size:13px;">
+              <option>Standard (720p)</option>
+              <option selected>High (1080p)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="privacy-note">Avoid recording passwords, payment details, or health data. Only what's on your screen after you tap Start will be captured — with your permission at every step.</div>
+
+        <div class="record-circle" onclick="requestPermission()"><div class="dot"></div></div>
+        <div class="center-label">Start Recording</div>
+        <div class="center-sub">Tap the circle to begin</div>
+      </div>
+
+      <!-- ===== PERMISSION MODAL (overlay within setup flow) ===== -->
+      <div class="screen" id="screen-permission">
+        <h1 class="title">Allow screen recording?</h1>
+        <p class="subtitle">EvidenceCap will start capturing your screen and audio, if enabled, once you tap Start now.</p>
+        <div class="card" style="text-align:center;padding:24px 16px;">
+          <p style="font-size:13.5px;color:var(--muted);margin-bottom:20px;">This is the standard Android system permission — EvidenceCap cannot record without it, and the system recording indicator will stay visible the whole time.</p>
+          <div class="btn-row">
+            <button class="btn btn-secondary" onclick="denyPermission()">Cancel</button>
+            <button class="btn btn-primary" onclick="grantPermission()">Start now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== 3. COUNTDOWN ===== -->
+      <div class="screen" id="screen-countdown">
+        <h1 class="title" style="text-align:center;">Get ready</h1>
+        <div class="countdown-num" id="countdown-num">3</div>
+        <p class="countdown-txt">After recording begins, switch to the app you want to test.</p>
+        <button class="btn btn-secondary" style="margin-top:40px;" onclick="cancelCountdown()">Cancel</button>
+      </div>
+
+      <!-- ===== 4. RECORDING ===== -->
+      <div class="screen" id="screen-recording">
+        <h1 class="title" style="text-align:center;">Recording in Progress</h1>
+        <p class="subtitle" style="text-align:center;">Clear controls. Complete evidence.</p>
+
+        <div class="rec-badge"><span class="rdot"></span> RECORDING <span id="rec-timer">00:00</span></div>
+        <div class="tag-row">
+          <span class="tag">Pixel 8 · Android 14</span>
+          <span class="tag storage-tag">82% storage free</span>
+        </div>
+
+        <div class="warn-banner" id="warn-banner">⚠ Battery at 14% — plug in soon or evidence capture may stop unexpectedly.</div>
+        <button class="demo-toggle" onclick="toggleWarning()">Preview low-resource warning</button>
+
+        <div class="record-square" onclick="stopRecording()"><div class="sq"></div></div>
+        <div class="center-label">Stop &amp; Review</div>
+
+        <div class="btn-row" style="margin-top:22px;">
+          <button class="btn btn-primary" onclick="pauseRecording()">Ⅱ Pause</button>
+          <button class="btn btn-secondary" onclick="markIssue()">⚑ Mark</button>
+        </div>
+        <div class="marker-count" id="marker-count">0 markers added</div>
+      </div>
+
+      <!-- ===== 5. PAUSED ===== -->
+      <div class="screen" id="screen-paused">
+        <h1 class="title">Pause Without Losing Progress</h1>
+        <p class="subtitle">Resume whenever you are ready</p>
+
+        <div class="rec-badge" style="background:var(--amber-bg);color:#7a520b;">Ⅱ PAUSED · <span id="paused-timer">00:00</span></div>
+
+        <div class="record-square" style="background:var(--red);"><div class="sq"></div></div>
+
+        <div class="btn-row" style="margin-top:22px;">
+          <button class="btn btn-primary" onclick="resumeRecording()">▶ Resume</button>
+          <button class="btn btn-danger" onclick="stopRecording()">Stop</button>
+        </div>
+        <p class="center-sub" style="margin-top:16px;">Your recording is safely paused</p>
+      </div>
+
+      <!-- ===== 6. REVIEW ===== -->
+      <div class="screen" id="screen-review">
+        <h1 class="title">Review the Exact Moment</h1>
+        <p class="subtitle">Timestamp markers make defects easy to find</p>
+
+        <div class="player" onclick="this.querySelector('.play-btn').textContent = this.querySelector('.play-btn').textContent==='▶'?'Ⅱ':'▶'">
+          <div class="play-btn">▶</div>
+        </div>
+        <div class="scrub">
+          <div class="track"></div>
+          <div class="marker-dot" id="scrub-dots"></div>
+        </div>
+        <div class="time-row"><span>00:00</span><span id="review-duration">00:00</span></div>
+
+        <div class="trim-block">
+          <label class="field-label">Trim start / end</label>
+          <input type="range" min="0" max="100" value="0">
+          <input type="range" min="0" max="100" value="100">
+        </div>
+
+        <label class="field-label">Marked issues</label>
+        <div class="card" id="marker-list-card">
+          <div class="marker-list-item" style="color:var(--muted);">No markers yet — go back and mark an issue while recording.</div>
+        </div>
+
+        <button class="btn btn-secondary" style="margin-top:16px;" onclick="takeScreenshot()">📷 Create Screenshot</button>
+
+        <div class="btn-row" style="margin-top:12px;">
+          <button class="btn btn-secondary" onclick="confirmRetake()">Retake</button>
+          <button class="btn btn-primary" onclick="useRecording()">Use Recording</button>
+        </div>
+      </div>
+
+      <!-- ===== 7. BUG REPORT ===== -->
+      <div class="screen" id="screen-report">
+        <h1 class="title">Create a Complete Bug Report</h1>
+        <p class="subtitle">Turn captured evidence into actionable details</p>
+
+        <label class="field-label">Bug title *</label>
+        <input type="text" id="bug-title" placeholder="Login button becomes unresponsive" oninput="validateReport()">
+
+        <label class="field-label">Steps to reproduce *</label>
+        <div id="steps-list"></div>
+        <div class="add-step-row">
+          <input type="text" id="new-step-input" placeholder="Add a step…">
+          <button onclick="addStep()">Add</button>
+        </div>
+
+        <label class="field-label">Actual result *</label>
+        <textarea id="actual-result" placeholder="No response or error message appears" oninput="validateReport()"></textarea>
+
+        <label class="field-label">Expected result *</label>
+        <textarea id="expected-result" placeholder="Show an error and allow another attempt" oninput="validateReport()"></textarea>
+
+        <label class="field-label">Severity</label>
+        <div class="chip-row" id="severity-row">
+          <div class="chip" data-val="Low" onclick="selectChip('severity',this)">Low</div>
+          <div class="chip" data-val="Medium" onclick="selectChip('severity',this)">Medium</div>
+          <div class="chip active" data-val="High" onclick="selectChip('severity',this)">High</div>
+          <div class="chip" data-val="Critical" onclick="selectChip('severity',this)">Critical</div>
+        </div>
+
+        <label class="field-label">Priority</label>
+        <div class="chip-row" id="priority-row">
+          <div class="chip" data-val="Low" onclick="selectChip('priority',this)">Low</div>
+          <div class="chip" data-val="Medium" onclick="selectChip('priority',this)">Medium</div>
+          <div class="chip" data-val="High" onclick="selectChip('priority',this)">High</div>
+          <div class="chip active pri" data-val="Urgent" onclick="selectChip('priority',this)">Urgent</div>
+        </div>
+
+        <div class="btn-row" style="margin-top:22px;">
+          <button class="btn btn-secondary" onclick="saveDraft()">Save Draft</button>
+          <button class="btn btn-primary" id="continue-export-btn" onclick="continueExport()" disabled>Continue to Export →</button>
+        </div>
+      </div>
+
+      <!-- ===== 8. EXPORT ===== -->
+      <div class="screen" id="screen-export">
+        <h1 class="title" style="text-align:center;">Bug Report Ready</h1>
+        <p class="subtitle" style="text-align:center;">Share evidence in the format your team needs</p>
+        <div class="checkmark">✓</div>
+
+        <div class="card summary-card">
+          <div class="row"><span id="export-title" style="font-weight:700;">Login button becomes unresponsive</span></div>
+          <div class="row"><span style="font-size:13px;color:var(--muted);" id="export-meta">High severity · Pixel 8 · Android 14</span></div>
+          <div class="row"><span style="font-size:13px;color:var(--muted);" id="export-stats">00:00 recording · 0 marked issues</span></div>
+        </div>
+
+        <button class="btn btn-secondary export-btn" style="margin-top:16px;" onclick="showScreen('report')">✎ View / Edit Report</button>
+        <button class="btn btn-primary export-btn" onclick="copyShareLink()">Copy Share Link</button>
+        <button class="btn btn-secondary export-btn" onclick="downloadFile('ZIP')">Download ZIP Package</button>
+        <button class="btn btn-secondary export-btn" onclick="downloadFile('HTML')">Download HTML Report</button>
+        <button class="btn btn-secondary export-btn" onclick="downloadFile('PDF')">Download PDF Report</button>
+        <button class="btn btn-secondary" onclick="createAnother()">＋ Create Another Report</button>
+      </div>
+
+      <!-- ===== 9. SETTINGS ===== -->
+      <div class="screen" id="screen-settings">
+        <h1 class="title">Settings</h1>
+        <p class="subtitle">Storage, retention and privacy</p>
+
+        <div class="card">
+          <div class="row"><span class="label">Storage</span><span class="pill">Encrypted · Local-only</span></div>
+        </div>
+
+        <label class="field-label">Auto-delete recordings after</label>
+        <div class="card" id="retention-card">
+          <div class="retention-opt" data-val="7 days" onclick="selectRetention(this)"><div class="radio"></div><span>7 days</span></div>
+          <div class="retention-opt" data-val="30 days" onclick="selectRetention(this)"><div class="radio"></div><span>30 days</span></div>
+          <div class="retention-opt" data-val="90 days" onclick="selectRetention(this)"><div class="radio"></div><span>90 days</span></div>
+          <div class="retention-opt" data-val="Never" onclick="selectRetention(this)"><div class="radio sel"></div><span>Never</span></div>
+        </div>
+        <p class="footer-note" id="retention-note">You'll get a confirmation before anything is auto-deleted.</p>
+      </div>
+
+      <div class="toast" id="toast"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------------- state ----------------
+  let elapsed = 0, timerHandle = null, markers = [], screenshots = 0;
+  let steps = ["Open login", "Enter password", "Tap Sign In"];
+  let severity = "High", priority = "Urgent";
+  let recoveredOnce = false;
+
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+id).classList.add('active');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    const navBtn = document.querySelector('.nav-btn[data-screen="'+id+'"]');
+    if(navBtn) navBtn.classList.add('active');
+    const labels = {home:'Home',setup:'Setup',permission:'Permission',countdown:'Countdown',recording:'Recording',paused:'Paused',review:'Review',report:'Report',export:'Export',settings:'Settings'};
+    document.getElementById('appbar-step').textContent = labels[id] || '';
+  }
+  document.querySelectorAll('.nav-btn').forEach(b=>{
+    b.addEventListener('click',()=>showScreen(b.dataset.screen));
+  });
+
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 1800);
+  }
+
+  function fmt(sec){
+    const m = String(Math.floor(sec/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    return m+':'+s;
+  }
+
+  // ---------------- Home ----------------
+  function startNewCapture(){ showScreen('setup'); }
+  function openDraftReport(){
+    document.getElementById('bug-title').value = "Login button becomes unresponsive";
+    steps = ["Open login","Enter password","Tap Sign In"];
+    renderSteps();
+    validateReport();
+    showScreen('report');
+  }
+  function openCompletedExport(){
+    document.getElementById('export-title').textContent = "Checkout total miscalculates tax";
+    document.getElementById('export-meta').textContent = "Medium severity · Pixel 8 · Android 14";
+    document.getElementById('export-stats').textContent = "00:47 recording · 1 marked issue";
+    showScreen('export');
+  }
+  function dismissRecovery(recover){
+    document.getElementById('recover-banner').style.display = 'none';
+    toast(recover ? "Recording recovered — opening Review" : "Interrupted recording discarded");
+    if(recover) showScreen('review');
+  }
+  // simulate a crash recovery banner appearing once, for demo purposes
+  setTimeout(()=>{ if(!recoveredOnce){ document.getElementById('recover-banner').style.display='block'; recoveredOnce = true; } }, 600);
+
+  // ---------------- Setup ----------------
+  function toggleMic(){
+    const t = document.getElementById('mic-toggle');
+    const on = t.classList.toggle('on');
+    document.getElementById('mic-label').textContent = on ? 'ON':'OFF';
+    document.getElementById('mic-label').classList.toggle('off', !on);
+  }
+  function requestPermission(){ showScreen('permission'); }
+  function denyPermission(){ toast("Permission denied — recording not started"); showScreen('setup'); }
+  function grantPermission(){ showScreen('countdown'); runCountdown(); }
+
+  // ---------------- Countdown ----------------
+  let countdownHandle;
+  function runCountdown(){
+    let n = 3;
+    document.getElementById('countdown-num').textContent = n;
+    clearInterval(countdownHandle);
+    countdownHandle = setInterval(()=>{
+      n--;
+      if(n<=0){
+        clearInterval(countdownHandle);
+        beginRecording();
+        return;
+      }
+      document.getElementById('countdown-num').textContent = n;
+    }, 700);
+  }
+  function cancelCountdown(){ clearInterval(countdownHandle); showScreen('setup'); }
+
+  // ---------------- Recording ----------------
+  function beginRecording(){
+    elapsed = 0; markers = []; screenshots = 0;
+    updateMarkerCount();
+    showScreen('recording');
+    clearInterval(timerHandle);
+    timerHandle = setInterval(()=>{
+      elapsed++;
+      document.getElementById('rec-timer').textContent = fmt(elapsed);
+    },1000);
+  }
+  function pauseRecording(){
+    clearInterval(timerHandle);
+    document.getElementById('paused-timer').textContent = fmt(elapsed);
+    showScreen('paused');
+  }
+  function resumeRecording(){
+    showScreen('recording');
+    document.getElementById('rec-timer').textContent = fmt(elapsed);
+    clearInterval(timerHandle);
+    timerHandle = setInterval(()=>{
+      elapsed++;
+      document.getElementById('rec-timer').textContent = fmt(elapsed);
+    },1000);
+  }
+  function stopRecording(){
+    clearInterval(timerHandle);
+    renderReview();
+    showScreen('review');
+  }
+  function markIssue(){
+    markers.push(elapsed);
+    updateMarkerCount();
+    toast("Marker added at "+fmt(elapsed));
+  }
+  function updateMarkerCount(){
+    document.getElementById('marker-count').textContent = markers.length + (markers.length===1 ? " marker added":" markers added");
+  }
+  function toggleWarning(){
+    document.getElementById('warn-banner').classList.toggle('show');
+  }
+
+  // ---------------- Review ----------------
+  function renderReview(){
+    document.getElementById('review-duration').textContent = fmt(elapsed);
+    const dotsWrap = document.getElementById('scrub-dots');
+    dotsWrap.innerHTML = '';
+    const listCard = document.getElementById('marker-list-card');
+    listCard.innerHTML = '';
+    if(markers.length === 0){
+      listCard.innerHTML = '<div class="marker-list-item" style="color:var(--muted);">No markers yet.</div>';
+    }
+    markers.forEach((m,i)=>{
+      const pct = elapsed>0 ? Math.min(96,(m/elapsed)*100) : 0;
+      const dot = document.createElement('div');
+      dot.className='marker-dot';
+      dot.style.left = pct+'%';
+      dot.title = "Marker "+(i+1)+" — "+fmt(m);
+      dotsWrap.appendChild(dot);
+
+      const item = document.createElement('div');
+      item.className='marker-list-item';
+      item.innerHTML = '<span>Marker '+(i+1)+' — '+fmt(m)+'</span><button class="jump-btn" onclick="toast(\'Jumped to '+fmt(m)+'\')">Jump ▶</button>';
+      listCard.appendChild(item);
+    });
+  }
+  function takeScreenshot(){
+    screenshots++;
+    toast("Screenshot "+screenshots+" saved");
+  }
+  function confirmRetake(){
+    if(confirm("Discard this recording, including markers and screenshots? This can't be undone.")){
+      showScreen('setup');
+    }
+  }
+  function useRecording(){ showScreen('report'); }
+
+  // ---------------- Bug report ----------------
+  function renderSteps(){
+    const wrap = document.getElementById('steps-list');
+    wrap.innerHTML = '';
+    steps.forEach((s,i)=>{
+      const row = document.createElement('div');
+      row.className='step-item';
+      row.innerHTML = '<div class="step-num">'+(i+1)+'</div><input type="text" value="'+s.replace(/"/g,'&quot;')+'" oninput="steps['+i+']=this.value">'+
+        '<button class="step-remove" onclick="removeStep('+i+')">×</button>';
+      wrap.appendChild(row);
+    });
+    validateReport();
+  }
+  function addStep(){
+    const input = document.getElementById('new-step-input');
+    if(input.value.trim()===''){ return; }
+    steps.push(input.value.trim());
+    input.value='';
+    renderSteps();
+  }
+  function removeStep(i){ steps.splice(i,1); renderSteps(); }
+  renderSteps();
+
+  function selectChip(group, el){
+    const rowId = group==='severity' ? 'severity-row':'priority-row';
+    document.querySelectorAll('#'+rowId+' .chip').forEach(c=>c.classList.remove('active','pri'));
+    el.classList.add('active');
+    if(group==='priority') el.classList.add('pri');
+    if(group==='severity') severity = el.dataset.val; else priority = el.dataset.val;
+  }
+
+  function validateReport(){
+    const title = document.getElementById('bug-title').value.trim();
+    const actual = document.getElementById('actual-result').value.trim();
+    const expected = document.getElementById('expected-result').value.trim();
+    const ok = title!=='' && steps.length>0 && actual!=='' && expected!=='';
+    document.getElementById('continue-export-btn').disabled = !ok;
+  }
+  function saveDraft(){ toast("Draft saved — find it later on Home"); }
+  function continueExport(){
+    const title = document.getElementById('bug-title').value.trim() || "Untitled bug report";
+    document.getElementById('export-title').textContent = title;
+    document.getElementById('export-meta').textContent = severity+" severity · Pixel 8 · Android 14";
+    document.getElementById('export-stats').textContent = fmt(elapsed)+" recording · "+markers.length+(markers.length===1?" marked issue":" marked issues");
+    showScreen('export');
+  }
+
+  // ---------------- Export ----------------
+  function copyShareLink(){ toast("Share link copied to clipboard"); }
+  function downloadFile(type){ toast(type+" package downloaded"); }
+  function createAnother(){
+    document.getElementById('bug-title').value='';
+    document.getElementById('actual-result').value='';
+    document.getElementById('expected-result').value='';
+    steps = []; renderSteps();
+    showScreen('setup');
+  }
+
+  // ---------------- Settings ----------------
+  function selectRetention(el){
+    document.querySelectorAll('.retention-opt .radio').forEach(r=>r.classList.remove('sel'));
+    el.querySelector('.radio').classList.add('sel');
+    const val = el.dataset.val;
+    document.getElementById('retention-note').textContent =
+      val==='Never' ? "You'll get a confirmation before anything is auto-deleted." :
+      "Recordings older than "+val+" will be auto-deleted, with a confirmation first.";
+  }
+</script>
+</body>
+</html>
